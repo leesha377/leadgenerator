@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Acme Payroll",
+    "domain": "acmepayroll.com",
+    "industry": "SaaS Payroll",
+    "employeeCount": 120,
+    "location": "New York, USA",
+    "description": "Payroll SaaS for mid-size companies"
+  },
+  {
+    "name": "Blue Logistics",
+    "domain": "bluelogistics.example", 
+    "industry": "Logistics",
+    "employeeCount": 500,
+    "location": "Berlin, Germany",
+    "description": "Logistics and supply chain solutions"
+  },
+  {
+    "name": "GreenTech Solutions",
+    "domain": "greentech.example",
+    "industry": "Clean Energy",
+    "employeeCount": 45,
+    "location": "Austin, USA",
+    "description": "Renewable energy device maker"
+  },
+  {
+    "name": "MarketFlow",
+    "domain": "marketflow.example",
+    "industry": "Marketing SaaS",
+    "employeeCount": 250,
+    "location": "London, UK",
+    "description": "Marketing automation for e-commerce"
+  }
+]
