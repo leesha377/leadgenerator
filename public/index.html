@@ -2,61 +2,255 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Lead Generator — Mini Example (free)</title>
+  <title>Lead Generator — Mini (Dark)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; margin: 18px; color:#111; background:#f7fafc; }
-    .card { background:#fff; border-radius:8px; padding:14px; box-shadow:0 6px 16px rgba(0,0,0,0.06); max-width:1100px; margin:0 auto; }
-    header { margin-bottom:12px; }
-    h1 { margin:0 0 6px 0; font-size:20px; }
-    .subtitle { color:#666; font-size:13px; margin-bottom:10px; }
-    .controls { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
-    input, select, textarea, button { padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0; }
-    button { background:#0ea5a3; color:#fff; border:none; cursor:pointer; font-weight:600; }
-    button.secondary { background:transparent; border:1px solid #e2e8f0; color:#334155; }
-    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
-    th, td { padding:8px; border-bottom:1px solid #eef2f7; text-align:left; vertical-align:top; }
-    th { color:#718096; font-size:12px; text-transform:uppercase; }
-    .muted { color:#718096; font-size:13px; }
-    .small { width:110px; }
-    .note { color:#475569; font-size:13px; }
-    @media (max-width:800px) {
-      .controls { flex-direction:column; align-items:flex-start; }
-    }
+    :root{ --bg:#000; --card:#0b0b0b; --muted:#cbd5e1; --accent:#ffd600; --accent-2:#ffdd57; --white:#ffffff; }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; background:var(--bg); color:var(--white);}
+    .container{max-width:1100px; margin:28px auto; padding:18px;}
+    header{display:flex; align-items:center; gap:16px; margin-bottom:14px}
+    h1{margin:0; font-size:22px; color:var(--white)}
+    .subtitle{color:var(--muted); font-size:13px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); padding:14px; border-radius:10px}
+    .controls{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    label{font-size:13px; color:var(--muted)}
+    input[type=text], input[type=number], select, textarea{background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--white); padding:8px 10px; border-radius:8px}
+    button{background:var(--accent); color:#000; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700}
+    button.secondary{background:transparent; color:var(--white); border:1px solid rgba(255,255,255,0.06)}
+    .muted{color:var(--muted)}
+    .small{width:120px}
+    table{width:100%; border-collapse:collapse; margin-top:12px; font-size:13px}
+    th, td{padding:10px; border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:top}
+    th{color:var(--muted); font-size:12px; text-transform:uppercase}
+    .spinner{display:inline-block; width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,0.08); border-top-color:var(--accent); animation:spin 1s linear infinite; margin-left:8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .domain-input{width:200px; padding:6px 8px; border-radius:6px;}
+    .yellow-pill{background:var(--accent); color:#000; padding:6px 8px; border-radius:999px; font-weight:700}
+    .note{color:var(--muted); font-size:13px}
+    .sources{font-size:12px; color:var(--muted)}
+    .approved{background: linear-gradient(90deg, rgba(255,214,0,0.08), rgba(255,214,0,0.02));}
+    @media(max-width:900px){ .controls{flex-direction:column; align-items:flex-start} table, thead, tbody, tr, th, td{display:block} tr{margin-bottom:12px; border-radius:8px; padding:10px; background:rgba(255,255,255,0.01)} th{display:none} td{padding:6px 0} }
   </style>
 </head>
 <body>
-  <div class="card">
+  <div class="container">
     <header>
-      <h1>Lead Generator — Mini Example (free)</h1>
-      <div class="subtitle">Discover Indian companies, enrich websites and infer problems (free demo)</div>
+      <div>
+        <h1>Lead Generator — Mini</h1>
+        <div class="subtitle">Discover Indian companies & enrich website contacts — free demo</div>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center">
+        <div class="yellow-pill">Free</div>
+      </div>
     </header>
 
-    <div class="controls">
-      <div>
-        <label class="muted">Mode</label><br/>
-        <select id="mode">
-          <option value="structured">Structured (local)</option>
-          <option value="manual">Manual description</option>
-          <option value="discover">Discover India</option>
-        </select>
+    <div class="card">
+      <div class="controls">
+        <div>
+          <label>Mode</label><br/>
+          <select id="mode">
+            <option value="structured">Structured (local)</option>
+            <option value="manual">Manual</option>
+            <option value="discover" selected>Discover India</option>
+          </select>
+        </div>
+
+        <div id="structuredControls">
+          <label>Company name</label><br/>
+          <input id="companyName" type="text" placeholder="contains..." />
+        </div>
+
+        <div id="manualControls" style="display:none">
+          <label>Manual eligibility</label><br/>
+          <input id="manualText" type="text" placeholder="e.g. SaaS payroll > 50" style="width:320px" />
+        </div>
+
+        <div id="discoverControls">
+          <label>Keyword / City</label><br/>
+          <input id="discoverKeyword" type="text" placeholder="software, textiles, Mumbai..." />
+        </div>
+
+        <div>
+          <label>Max</label><br/>
+          <input id="limit" class="small" type="number" value="10" min="1" max="50" />
+        </div>
+
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center">
+          <button id="searchBtn">Search</button>
+          <button id="exportBtn" class="secondary">Export CSV</button>
+        </div>
       </div>
 
-      <div id="structuredControls">
-        <label class="muted">Company name</label><br/>
-        <input id="companyName" type="text" placeholder="contains..." />
-      </div>
+      <div style="margin-top:10px" class="note">Tip: Use Discover India with a keyword like "software" or a city like "Mumbai". After results appear use "Set domain" if the domain is missing then click Enrich.</div>
 
-      <div id="manualControls" style="display:none">
-        <label class="muted">Manual eligibility</label><br/>
-        <input id="manualText" type="text" placeholder='e.g. "SaaS payroll > 50"' style="width:320px" />
+      <div style="margin-top:12px">
+        <div id="status" class="note">Status: idle</div>
+        <table id="resultsTable" style="display:none">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Company</th>
+              <th>Domain</th>
+              <th>Location</th>
+              <th>Problems</th>
+              <th>Emails</th>
+              <th>Phones</th>
+              <th>Sources</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="empty" class="note" style="margin-top:12px">No results yet — run a search or discovery.</div>
       </div>
+    </div>
+  </div>
 
-      <div id="discoverControls" style="display:none">
-        <label class="muted">Keyword / City</label><br/>
-        <input id="discoverKeyword" type="text" placeholder="software, textiles, Mumbai..." />
-      </div>
+<script>
+const mode = document.getElementById('mode');
+const structuredControls = document.getElementById('structuredControls');
+const manualControls = document.getElementById('manualControls');
+const discoverControls = document.getElementById('discoverControls');
+const statusEl = document.getElementById('status');
+const resultsTable = document.getElementById('resultsTable');
+const tbody = resultsTable.querySelector('tbody');
 
-      <div>
-        <label class="muted">Max</label><br/>
-        <
+mode.addEventListener('change', () => {
+  const v = mode.value;
+  structuredControls.style.display = v === 'structured' ? '' : 'none';
+  manualControls.style.display = v === 'manual' ? '' : 'none';
+  discoverControls.style.display = v === 'discover' ? '' : 'none';
+});
+
+function showStatus(t){ statusEl.textContent = 'Status: ' + t; }
+
+async function apiPost(path, body){
+  const res = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){
+    const txt = await res.text().catch(()=>res.statusText);
+    throw new Error(res.status + ' ' + (res.statusText || txt));
+  }
+  return res.json();
+}
+
+document.getElementById('searchBtn').addEventListener('click', async () => {
+  showStatus('Searching...');
+  const v = mode.value;
+  const limit = Number(document.getElementById('limit').value) || 10;
+  try{
+    let json;
+    if(v === 'structured'){
+      json = await apiPost('/api/search', { flow:'structured', filters:{ companyName: document.getElementById('companyName').value.trim() }, limit });
+    } else if(v === 'manual'){
+      json = await apiPost('/api/search', { flow:'manual', manualText: document.getElementById('manualText').value.trim(), limit });
+    } else {
+      json = await apiPost('/api/discover', { keyword: document.getElementById('discoverKeyword').value.trim(), limit });
+    }
+    if(!json.ok) throw new Error('No results');
+    populateResults(json.results || []);
+    showStatus('Search complete — ' + (json.results ? json.results.length : 0) + ' items');
+  } catch(err){
+    console.error(err);
+    showStatus('Error: ' + (err.message || err));
+  }
+});
+
+function populateResults(results){
+  tbody.innerHTML = '';
+  if(!results || results.length === 0){ resultsTable.style.display = 'none'; document.getElementById('empty').style.display = 'block'; return; }
+  resultsTable.style.display = '';
+  document.getElementById('empty').style.display = 'none';
+
+  results.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    const emails = Array.isArray(r.emails) && r.emails.length ? r.emails.join('<br/>') : 'not available';
+    const phones = Array.isArray(r.phones) && r.phones.length ? r.phones.join('<br/>') : 'not available';
+    const sources = r.sources && r.sources.length ? r.sources.map(s=>`<div class="sources"><a class="link" href="${s}" target="_blank" style="color:var(--accent-2)">${s}</a></div>`).join('') : 'not available';
+
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td style="max-width:220px">${escapeHtml(r.name||'not available')}</td>
+      <td>
+        <div>${r.domain || 'not available'}</div>
+        <div style="margin-top:6px">
+          <input class="domain-input" data-idx="${i}" placeholder="example.com" value="${r.domain && r.domain!=='not available'?r.domain:''}" />
+          <button class="secondary setDomain" data-idx="${i}">Set domain</button>
+        </div>
+      </td>
+      <td>${escapeHtml(r.location || 'not available')}</td>
+      <td>${escapeHtml(r.problemSummary || 'not available')}</td>
+      <td class="emails">${emails}</td>
+      <td class="phones">${phones}</td>
+      <td>${sources}</td>
+      <td>
+        <div class="note" id="rowStatus${i}">idle</div>
+        <div style="margin-top:6px">
+          <button class="enrichBtn" data-idx="${i}">Enrich</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // bind events
+  document.querySelectorAll('.setDomain').forEach(b=>b.addEventListener('click', onSetDomain));
+  document.querySelectorAll('.enrichBtn').forEach(b=>b.addEventListener('click', onEnrichClick));
+}
+
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function onSetDomain(e){ const i = Number(e.target.getAttribute('data-idx')); const inp = document.querySelector(`.domain-input[data-idx='${i}']`); const v = inp.value.trim(); if(!v){ alert('Enter domain like example.com'); return; } const row = tbody.children[i]; row.children[2].firstChild.textContent = v; }
+
+async function onEnrichClick(e){ const i = Number(e.target.getAttribute('data-idx')); enrichRow(i); }
+
+async function enrichRow(i){
+  const rowStatus = document.getElementById('rowStatus'+i);
+  rowStatus.innerHTML = 'Enriching <span class="spinner"></span>';
+  try{
+    const row = tbody.children[i];
+    const name = row.children[1].innerText;
+    const domainInput = row.querySelector('.domain-input').value.trim();
+    const payload = domainInput ? { domain: domainInput } : { name };
+    const res = await apiPost('/api/enrich', payload);
+    if(!res.ok) throw new Error('Enrich failed');
+    const d = res.data;
+    row.children[2].firstChild.textContent = d.domain || 'not available';
+    row.querySelector('.emails').innerHTML = (Array.isArray(d.emails) && d.emails.length) ? d.emails.join('<br/>') : 'not available';
+    row.querySelector('.phones').innerHTML = (Array.isArray(d.phones) && d.phones.length) ? d.phones.join('<br/>') : 'not available';
+    // show sources
+    const srcCell = row.children[7];
+    srcCell.innerHTML = (d.sources && d.sources.length) ? d.sources.map(s=>`<div class="sources"><a class="link" href="${s}" target="_blank">${s}</a></div>`).join('') : 'not available';
+    // problems
+    row.children[4].textContent = d.problemSummary || 'not available';
+
+    rowStatus.textContent = 'Done';
+  }catch(err){
+    console.error(err);
+    const rowStatus = document.getElementById('rowStatus'+i);
+    if(rowStatus) rowStatus.textContent = 'Error';
+    alert('Enrich failed: ' + (err.message||err));
+  }
+}
+
+// Export CSV
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const rows = [];
+  const headers = ['Company','Domain','Location','Problems','Emails','Phones','Sources'];
+  rows.push(headers.join(','));
+  for(let i=0;i<tbody.children.length;i++){\n    const tr = tbody.children[i];
+    const company = `"${(tr.children[1].innerText||'').replace(/"/g,'""')}"`;
+    const domain = `"${(tr.children[2].firstChild.textContent||'not available').replace(/"/g,'""')}"`;
+    const location = `"${(tr.children[3].innerText||'').replace(/"/g,'""')}"`;
+    const problems = `"${(tr.children[4].innerText||'').replace(/"/g,'""')}"`;
+    const emails = `"${(tr.querySelector('.emails').innerText||'').replace(/"/g,'""')}"`;
+    const phones = `"${(tr.querySelector('.phones').innerText||'').replace(/"/g,'""')}"`;
+    const sources = `"${(tr.children[7].innerText||'').replace(/"/g,'""')}"`;
+    rows.push([company,domain,location,problems,emails,phones,sources].join(','));
+  }
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'leads.csv'; a.click(); URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
