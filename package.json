@@ -1,0 +1,17 @@
+{
+  "name": "lead-gen-mini-example",
+  "version": "1.0.0",
+  "description": "Mini lead-gen example (no paid APIs) — scrape site contact info and show results in table",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.12"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
