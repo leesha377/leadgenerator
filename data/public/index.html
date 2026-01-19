@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Lead Gen Mini Example</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .row { margin-bottom: 8px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    button { padding: 6px 10px; }
+    input, select, textarea { padding: 6px; width: 300px; }
+    .small { width: 120px; }
+    .muted { color: #666; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h2>Lead Generator — Mini Example (free)</h2>
+
+  <div>
+    <label><input type="radio" name="flow" value="structured" checked> Structured filters</label>
+    <label><input type="radio" name="flow" value="manual"> Manual description</label>
+  </div>
+
+  <div id="structuredForm">
+    <div class="row">
+      Company name contains: <input id="companyName" />
+    </div>
+    <div class="row">
+      Industry: <input id="industry" />
+    </div>
+    <div class="row">
+      Location: <input id="location" />
+    </div>
+    <div class="row">
+      Min employees: <input id="minEmployees" class="small" type="number" />
+      Max employees: <input id="maxEmployees" class="small" type="number" />
+    </div>
+  </div>
+
+  <div id="manualForm" style="display:none">
+    <div class="row">
+      Describe eligibility (e.g. "SaaS payroll companies > 100 employees"): <br/>
+      <textarea id="manualText" rows="3" cols="80"></textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    Max results: <input id="limit" class="small" type="number" value="10" />
+    <button id="searchBtn">Search</button>
+    <button id="exportBtn">Export CSV</button>
+  </div>
+
+  <div id="status" class="muted"></div>
+
+  <table id="resultsTable" style="display:none">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Company</th>
+        <th>Domain</th>
+        <th>Industry</th>
+        <th>Employees</th>
+        <th>Location</th>
+        <th>Emails</th>
+        <th>Phones</th>
+        <th>Enrich</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+document.querySelectorAll('input[name=flow]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const v = document.querySelector('input[name=flow]:checked').value;
+    document.getElementById('structuredForm').style.display = v === 'structured' ? '' : 'none';
+    document.getElementById('manualForm').style.display = v === 'manual' ? '' : 'none';
+  });
+});
+
+const status = document.getElementById('status');
+const resultsTable = document.getElementById('resultsTable');
+const tbody = resultsTable.querySelector('tbody');
+let latestResults = [];
+
+function showStatus(t) { status.textContent = t; }
+
+document.getElementById('searchBtn').addEventListener('click', async () => {
+  const flow = document.querySelector('input[name=flow]:checked').value;
+  const limit = Number(document.getElementById('limit').value) || 10;
+  const payload = { flow, limit };
+
+  if (flow === 'structured') {
+    payload.filters = {
+      companyName: document.getElementById('companyName').value.trim(),
+      industry: document.getElementById('industry').value.trim(),
+      location: document.getElementById('location').value.trim(),
+      minEmployees: document.getElementById('minEmployees').value,
+      maxEmployees: document.getElementById('maxEmployees').value
+    };
+  } else {
+    payload.manualText = document.getElementById('manualText').value.trim();
+  }
+
+  showStatus('Searching...');
+  const res = await fetch('/api/search', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!data.ok) { showStatus('Search failed'); return; }
+  latestResults = data.results;
+  renderTable();
+  showStatus('Search complete. Click "Enrich" for each row to gather emails/phones.');
+});
+
+function renderTable() {
+  tbody.innerHTML = '';
+  if (!latestResults.length) { resultsTable.style.display = 'none'; return; }
+  resultsTable.style.display = '';
+  latestResults.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td>
+      <td>${r.name}</td>
+      <td>${r.domain}</td>
+      <td>${r.industry}</td>
+      <td>${r.employeeCount}</td>
+      <td>${r.location}</td>
+      <td class="emails">${Array.isArray(r.emails) ? r.emails.join('<br/>') : r.emails}</td>
+      <td class="phones">${Array.isArray(r.phones) ? r.phones.join('<br/>') : r.phones}</td>
+      <td><button data-idx="${i}" class="enrichBtn">Enrich</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.querySelectorAll('.enrichBtn').forEach(b => {
+    b.addEventListener('click', async (e) => {
+      const i = e.target.getAttribute('data-idx');
+      const row = latestResults[i];
+      showStatus('Enriching ' + row.name + ' ...');
+      const res = await fetch('/api/enrich', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ domain: row.domain !== 'not available' ? row.domain : undefined, name: row.name })
+      });
+      const j = await res.json();
+      if (!j.ok) {
+        showStatus('Enrichment failed');
+        return;
+      }
+      row.emails = j.data.emails;
+      row.phones = j.data.phones;
+      renderTable();
+      showStatus('Enrichment complete for ' + row.name);
+    });
+  });
+}
+
+// Export CSV
+function convertToCSV(arr) {
+  const header = ["Company","Domain","Industry","Employees","Location","Emails","Phones"];
+  const lines = [header.join(',')];
+  arr.forEach(r => {
+    const line = [
+      `"${r.name.replace(/"/g,'""')}"`,
+      `"${(r.domain||'not available').replace(/"/g,'""')}"`,
+      `"${(r.industry||'not available').replace(/"/g,'""')}"`,
+      `"${r.employeeCount}"`,
+      `"${(r.location||'not available').replace(/"/g,'""')}"`,
+      `"${(Array.isArray(r.emails) ? r.emails.join('; ') : r.emails).replace(/"/g,'""')}"`,
+      `"${(Array.isArray(r.phones) ? r.phones.join('; ') : r.phones).replace(/"/g,'""')}"`
+    ];
+    lines.push(line.join(','));
+  });
+  return lines.join('\n');
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (!latestResults.length) { showStatus('No results to export'); return; }
+  const csv = convertToCSV(latestResults);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'leads.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showStatus('CSV exported — open and paste into Google Sheets if needed.');
+});
+</script>
+</body>
+</html>
