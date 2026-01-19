@@ -2,278 +2,61 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Lead Gen Mini Example</title>
+  <title>Lead Generator — Mini Example (free)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .row { margin-bottom: 8px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; vertical-align: top; }
-    button { padding: 6px 10px; }
-    input, select, textarea { padding: 6px; width: 300px; }
-    .small { width: 120px; }
-    .muted { color: #666; font-size: 0.9em; }
-    .section { margin-top: 18px; padding: 10px; border: 1px dashed #ddd; }
-    .info { font-size: 0.9em; color: #333; background: #fafafa; padding: 6px; border-radius: 4px; }
-    .approved { background: #e6ffed; }
+    body { font-family: Arial, sans-serif; margin: 18px; color:#111; background:#f7fafc; }
+    .card { background:#fff; border-radius:8px; padding:14px; box-shadow:0 6px 16px rgba(0,0,0,0.06); max-width:1100px; margin:0 auto; }
+    header { margin-bottom:12px; }
+    h1 { margin:0 0 6px 0; font-size:20px; }
+    .subtitle { color:#666; font-size:13px; margin-bottom:10px; }
+    .controls { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+    input, select, textarea, button { padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0; }
+    button { background:#0ea5a3; color:#fff; border:none; cursor:pointer; font-weight:600; }
+    button.secondary { background:transparent; border:1px solid #e2e8f0; color:#334155; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    th, td { padding:8px; border-bottom:1px solid #eef2f7; text-align:left; vertical-align:top; }
+    th { color:#718096; font-size:12px; text-transform:uppercase; }
+    .muted { color:#718096; font-size:13px; }
+    .small { width:110px; }
+    .note { color:#475569; font-size:13px; }
+    @media (max-width:800px) {
+      .controls { flex-direction:column; align-items:flex-start; }
+    }
   </style>
 </head>
 <body>
-  <h2>Lead Generator — Mini Example (free)</h2>
+  <div class="card">
+    <header>
+      <h1>Lead Generator — Mini Example (free)</h1>
+      <div class="subtitle">Discover Indian companies, enrich websites and infer problems (free demo)</div>
+    </header>
 
-  <div>
-    <label><input type="radio" name="flow" value="structured" checked> Structured filters (local)</label>
-    <label><input type="radio" name="flow" value="manual"> Manual description</label>
-    <label><input type="radio" name="flow" value="discover"> Discover India companies</label>
-  </div>
+    <div class="controls">
+      <div>
+        <label class="muted">Mode</label><br/>
+        <select id="mode">
+          <option value="structured">Structured (local)</option>
+          <option value="manual">Manual description</option>
+          <option value="discover">Discover India</option>
+        </select>
+      </div>
 
-  <div id="structuredForm" class="section">
-    <h4>Structured filters (local sample)</h4>
-    <div class="row">
-      Company name contains: <input id="companyName" />
-    </div>
-    <div class="row">
-      Industry: <input id="industry" />
-    </div>
-    <div class="row">
-      Location: <input id="location" />
-    </div>
-    <div class="row">
-      Min employees: <input id="minEmployees" class="small" type="number" />
-      Max employees: <input id="maxEmployees" class="small" type="number" />
-    </div>
-  </div>
+      <div id="structuredControls">
+        <label class="muted">Company name</label><br/>
+        <input id="companyName" type="text" placeholder="contains..." />
+      </div>
 
-  <div id="manualForm" style="display:none" class="section">
-    <h4>Manual description</h4>
-    <div class="row">
-      Describe eligibility (e.g. "SaaS payroll companies > 100 employees"): <br/>
-      <textarea id="manualText" rows="3" cols="80"></textarea>
-    </div>
-  </div>
+      <div id="manualControls" style="display:none">
+        <label class="muted">Manual eligibility</label><br/>
+        <input id="manualText" type="text" placeholder='e.g. "SaaS payroll > 50"' style="width:320px" />
+      </div>
 
-  <div id="discoverForm" style="display:none" class="section">
-    <h4>Discover companies registered in India (OpenCorporates)</h4>
-    <div class="row">
-      Keyword / Industry: <input id="discoverKeyword" placeholder="e.g. 'software', 'textiles'"/>
-    </div>
-    <div class="row">
-      Location / City (optional): <input id="discoverLocation" placeholder="e.g. 'Mumbai'"/>
-    </div>
-  </div>
+      <div id="discoverControls" style="display:none">
+        <label class="muted">Keyword / City</label><br/>
+        <input id="discoverKeyword" type="text" placeholder="software, textiles, Mumbai..." />
+      </div>
 
-  <div class="row">
-    Max results: <input id="limit" class="small" type="number" value="10" />
-    <button id="searchBtn">Search / Discover</button>
-    <button id="exportBtn">Export CSV</button>
-  </div>
-
-  <div id="status" class="muted"></div>
-
-  <table id="resultsTable" style="display:none">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Company</th>
-        <th>Domain</th>
-        <th>Industry</th>
-        <th>Location</th>
-        <th>Details</th>
-        <th>Problems</th>
-        <th>Emails</th>
-        <th>Phones</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-<script>
-document.querySelectorAll('input[name=flow]').forEach(radio => {
-  radio.addEventListener('change', () => {
-    const v = document.querySelector('input[name=flow]:checked').value;
-    document.getElementById('structuredForm').style.display = v === 'structured' ? '' : 'none';
-    document.getElementById('manualForm').style.display = v === 'manual' ? '' : 'none';
-    document.getElementById('discoverForm').style.display = v === 'discover' ? '' : 'none';
-  });
-});
-
-const status = document.getElementById('status');
-const resultsTable = document.getElementById('resultsTable');
-const tbody = resultsTable.querySelector('tbody');
-let latestResults = [];
-
-function showStatus(t) { status.textContent = t; }
-
-document.getElementById('searchBtn').addEventListener('click', async () => {
-  const flow = document.querySelector('input[name=flow]:checked').value;
-  const limit = Number(document.getElementById('limit').value) || 10;
-  showStatus('Searching...');
-  if (flow === 'structured' || flow === 'manual') {
-    const payload = { flow, limit };
-    if (flow === 'structured') {
-      payload.filters = {
-        companyName: document.getElementById('companyName').value.trim(),
-        industry: document.getElementById('industry').value.trim(),
-        location: document.getElementById('location').value.trim(),
-        minEmployees: document.getElementById('minEmployees').value,
-        maxEmployees: document.getElementById('maxEmployees').value
-      };
-    } else {
-      payload.manualText = document.getElementById('manualText').value.trim();
-    }
-
-    const res = await fetch('/api/search', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!data.ok) { showStatus('Search failed'); return; }
-    latestResults = data.results.map(r => ({ ...r, approved: false, approvalNote: '' }));
-    renderTable();
-    showStatus('Search complete. Click "Enrich" for each row to gather emails/phones and infer problems.');
-  } else if (flow === 'discover') {
-    const keyword = document.getElementById('discoverKeyword').value.trim();
-    const location = document.getElementById('discoverLocation').value.trim();
-    showStatus('Discovering companies in India (this may take a few seconds)...');
-    const res = await fetch('/api/discover', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ keyword, location, limit })
-    });
-    const data = await res.json();
-    if (!data.ok) { showStatus('Discovery failed'); return; }
-    latestResults = data.results.map(r => ({ ...r, approved: false, approvalNote: '' }));
-    renderTable();
-    showStatus('Discovery complete. Use Enrich to attempt scraping website info if available.');
-  }
-});
-
-function renderTable() {
-  tbody.innerHTML = '';
-  if (!latestResults.length) { resultsTable.style.display = 'none'; return; }
-  resultsTable.style.display = '';
-  latestResults.forEach((r, i) => {
-    const details = r.description ? `<div class="info">${r.description}</div>` : '';
-    const problems = (r.problemSummary && r.problemSummary !== 'not available') ? r.problemSummary : 'not available';
-    const approvedClass = r.approved ? 'approved' : '';
-    const emailsHtml = Array.isArray(r.emails) ? r.emails.join('<br/>') : (r.emails || 'not available');
-    const phonesHtml = Array.isArray(r.phones) ? r.phones.join('<br/>') : (r.phones || 'not available');
-
-    const tr = document.createElement('tr');
-    tr.className = approvedClass;
-    tr.innerHTML = `<td>${i+1}</td>
-      <td>${r.name}</td>
-      <td>${r.domain}</td>
-      <td>${r.industry || 'not available'}</td>
-      <td>${r.location || 'not available'}</td>
-      <td>${details}</td>
-      <td>${problems}${r.approved ? '<div><strong>Approved:</strong> '+(r.approvalNote||'')+'</div>' : ''}</td>
-      <td class="emails">${emailsHtml}</td>
-      <td class="phones">${phonesHtml}</td>
-      <td>
-        <button data-idx="${i}" class="enrichBtn">Enrich</button>
-        <button data-idx="${i}" class="approveBtn">${r.approved ? 'Unapprove' : 'Approve'}</button>
-      </td>`;
-    tbody.appendChild(tr);
-  });
-
-  // Enrich buttons
-  document.querySelectorAll('.enrichBtn').forEach(b => {
-    b.addEventListener('click', async (e) => {
-      const i = e.target.getAttribute('data-idx');
-      const row = latestResults[i];
-      showStatus('Enriching ' + row.name + ' ...');
-      const res = await fetch('/api/enrich', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ domain: row.domain !== 'not available' ? row.domain : undefined, name: row.name })
-      });
-      const j = await res.json();
-      if (!j.ok) {
-        showStatus('Enrichment failed');
-        return;
-      }
-      row.emails = j.data.emails;
-      row.phones = j.data.phones;
-      if (j.data.domain) row.domain = j.data.domain;
-      // New: add inferred problems
-      row.inferredProblems = j.data.inferredProblems || [];
-      row.problemSummary = j.data.problemSummary || 'not available';
-      renderTable();
-      showStatus('Enrichment complete for ' + row.name);
-    });
-  });
-
-  // Approve buttons
-  document.querySelectorAll('.approveBtn').forEach(b => {
-    b.addEventListener('click', (e) => {
-      const i = e.target.getAttribute('data-idx');
-      const row = latestResults[i];
-      if (!row.approved) {
-        const note = prompt('Optional note for approval (explain automation idea):', '');
-        row.approved = true;
-        row.approvalNote = note || '';
-      } else {
-        // unapprove
-        row.approved = false;
-        row.approvalNote = '';
-      }
-      renderTable();
-    });
-  });
-}
-
-// Export CSV (includes Problems and Approved)
-function convertToCSV(arr) {
-  const header = ["Company","Domain","Industry","Location","Details","Problems","Approved","ApprovalNote","Emails","Phones"];
-  const lines = [header.join(',')];
-  arr.forEach(r => {
-    const line = [
-      `"${(r.name||'').replace(/"/g,'""')}"`,
-      `"${(r.domain||'not available').replace(/"/g,'""')}"`,
-      `"${(r.industry||'not available').replace(/"/g,'""')}"`,
-      `"${(r.location||'not available').replace(/"/g,'""')}"`,
-      `"${(r.description||'').replace(/"/g,'""')}"`,
-      `"${(r.problemSummary||'not available').replace(/"/g,'""')}"`,
-      `"${r.approved ? 'yes' : 'no'}"`,
-      `"${(r.approvalNote||'').replace(/"/g,'""')}"`,
-      `"${(Array.isArray(r.emails) ? r.emails.join('; ') : r.emails).replace(/"/g,'""')}"`,
-      `"${(Array.isArray(r.phones) ? r.phones.join('; ') : r.phones).replace(/"/g,'""')}"`
-    ];
-    lines.push(line.join(','));
-  });
-  return lines.join('\n');
-}
-
-document.getElementById('exportBtn').addEventListener('click', () => {
-  if (!latestResults.length) { showStatus('No results to export'); return; }
-  const csv = convertToCSV(latestResults);
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'leads.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  showStatus('CSV exported — open and paste into Google Sheets if needed.');
-});
-</script>
-</body>
-</html>
-````markdown name=README.md
-```markdown
-# Lead Gen Mini Example (no paid APIs)
-
-This is a tiny demo app that shows:
-- Two flows: "structured" and "manual" search (working against a small local dataset).
-- Discover companies registered in India using the OpenCorporates public API (free, rate-limited).
-- Enrichment/scrape of a company website for emails and phone numbers (free scraping).
-- Rule-based inference of likely problems/opportunities from website text (no LLM, free).
-- Approve action per company to mark a company as suitable for your custom automation with an optional note.
-- Results shown in a table and can be exported to CSV (easy to import into Google Sheets).
-
-Notes:
-- This is a demo only. Scraping public websites is allowed if the site permits it; respect robots.txt and site terms. Do not use this for mass scraping.
-- Problem inference uses simple keyword heuristics on About / Contact / Careers / Job pages. It will produce suggestions when those keywords appear but it is not an LLM.
-- To get results into Google Sheets: after exporting CSV you can open Google Sheets and do File → Import → Upload CSV.
+      <div>
+        <label class="muted">Max</label><br/>
+        <
