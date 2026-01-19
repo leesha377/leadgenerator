@@ -1,21 +1,7 @@
-# Lead Gen Mini Example (no paid APIs)
+## Discover India companies (OpenCorporates)
 
-This is a tiny demo app that shows:
-- Two flows: "structured" and "manual" search (working against a small local dataset).
-- Enrichment/scrape of a company website for emails and phone numbers (free scraping).
-- Results shown in a table and can be exported to CSV (then paste into Google Sheets manually).
-
-Requirements:
-- Node.js 16+ installed on your computer.
-
-How to run locally:
-1. Download or clone repository.
-2. In repository folder run:
-   - `npm install`
-   - `npm start`
-3. Open http://localhost:3000 in your browser.
+This demo can search Indian companies using the OpenCorporates public API. In the app choose "Discover India companies", enter a keyword or city (optional), set max results and click Search. The app will show registry data (company number, status, incorporation date, registered address) when available. Then click Enrich on any company to try scraping a website (if a domain exists or can be inferred).
 
 Notes:
-- This is a demo only. Scraping public websites is allowed if the site permits it; respect robots.txt and site terms. Do not use this for mass scraping.
-- The contact extraction uses simple regexes — it will find many emails and phones but also may miss or find false positives. For production you would use provider APIs and verification.
-- To get results into Google Sheets: after exporting CSV you can open Google Sheets and do File → Import → Upload CSV.
+- OpenCorporates is free but rate-limited. Please do not overload the API.
+- The app only attempts website scraping for contact info if a domain is available or can be inferred from the company name.
