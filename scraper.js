@@ -25,7 +25,6 @@ function extractContacts(text) {
   // phone regex (very permissive)
   const phoneRegex = /(?:\+?\d[\d\-\s().]{6,}\d)/g;
   while ((m = phoneRegex.exec(text))) {
-    // keep short normalized versions
     const p = m[0].replace(/\s+/g, ' ').trim();
     phones.add(p);
   }
@@ -46,21 +45,66 @@ async function findContactPages($, baseUrl) {
       if (href.startsWith('/')) {
         full = new URL(baseUrl).origin + href;
       } else if (!href.startsWith('http')) {
-        // relative
         full = new URL(href, baseUrl).href;
       }
       links.push(full);
     }
   });
-  // return deduped
   return Array.from(new Set(links)).slice(0, 8);
+}
+
+async function findJobPages($, baseUrl) {
+  const links = [];
+  $('a').each((i, el) => {
+    const href = $(el).attr('href') || '';
+    const text = ($(el).text() || '').toLowerCase();
+    if (href.toLowerCase().includes('career') || href.toLowerCase().includes('job') || href.toLowerCase().includes('vacancy') || text.includes('career') || text.includes('jobs') || text.includes('join us')) {
+      let full = href;
+      if (href.startsWith('/')) {
+        full = new URL(baseUrl).origin + href;
+      } else if (!href.startsWith('http')) {
+        full = new URL(href, baseUrl).href;
+      }
+      links.push(full);
+    }
+  });
+  return Array.from(new Set(links)).slice(0, 6);
+}
+
+// Keyword -> problem suggestion mapping (simple heuristics)
+const KEYWORD_PROBLEMS = [
+  { kws: ['manual', 'excel', 'spreadsheets', 'paper', 'copy paste'], suggestion: 'Likely uses manual processes (Excel/paper); could benefit from automation to reduce errors and save time.' },
+  { kws: ['legacy', 'outdated', 'old system', 'on-prem', 'monolith'], suggestion: 'May have legacy systems; migration or automation could improve reliability and speed.' },
+  { kws: ['scale', 'scalability', 'growing quickly', 'rapid growth'], suggestion: 'Scaling challenges—automation and scalable infrastructure can help manage growth.' },
+  { kws: ['support', 'customer support', 'tickets', 'sla', 'helpdesk'], suggestion: 'High customer support load; automating repetitive support tasks could reduce time-to-resolution.' },
+  { kws: ['marketing', 'lead', 'leads', 'conversion', 'traffic'], suggestion: 'Marketing / lead generation area may need improvement—automation can help nurture leads.' },
+  { kws: ['cost', 'reduce cost', 'cut cost', 'operational cost'], suggestion: 'Cost reduction opportunities; automations can lower operational expenses.' },
+  { kws: ['integrat', 'integration', 'api', 'manual integration'], suggestion: 'Integration gaps between systems—building connectors or automations can improve data flow.' },
+  { kws: ['hiring', 'hiring fast', 'recruit', 'we are hiring'], suggestion: 'Active hiring may indicate growth pains; automating onboarding or HR workflows could help.' },
+  { kws: ['payments', 'billing', 'invoic'], suggestion: 'Billing / payments may be a challenge—automation can streamline invoices and collections.' },
+  { kws: ['inventory', 'warehouse', 'logistics', 'supply chain'], suggestion: 'Operations / supply chain area could benefit from automation and tracking improvements.' }
+];
+
+function inferProblemsFromText(text) {
+  if (!text || text.length < 30) return [];
+  const low = text.toLowerCase();
+  const found = [];
+  for (const item of KEYWORD_PROBLEMS) {
+    for (const kw of item.kws) {
+      if (low.includes(kw)) {
+        found.push(item.suggestion);
+        break;
+      }
+    }
+  }
+  // Deduplicate and limit to 3 suggestions
+  return Array.from(new Set(found)).slice(0, 3);
 }
 
 module.exports = async function enrich(domain, name) {
   // If domain not provided try to make one from name (very naive)
   let base = domain;
   if (!base && name) {
-    // make domain candidate: take first two words, join, add .com
     const parts = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).slice(0, 2);
     base = parts.join('') + '.com';
   }
@@ -69,7 +113,6 @@ module.exports = async function enrich(domain, name) {
 
   let urlsToTry = [`https://${base}`, `http://${base}`];
 
-  // try root, then also try www
   if (!base.startsWith('www.')) {
     urlsToTry.push(`https://www.${base}`, `http://www.${base}`);
   }
@@ -87,6 +130,7 @@ module.exports = async function enrich(domain, name) {
   const foundEmails = new Set();
   const foundPhones = new Set();
   const foundUrls = new Set();
+  const collectedTextPieces = [];
 
   if (html && usedUrl) {
     const { emails, phones } = extractContacts(html);
@@ -94,10 +138,10 @@ module.exports = async function enrich(domain, name) {
     phones.forEach(p => foundPhones.add(p));
     foundUrls.add(usedUrl);
 
-    // parse HTML to get contact/about pages
     const $ = cheerio.load(html);
-    const contactPages = await findContactPages($, usedUrl);
+    collectedTextPieces.push($('body').text() || '');
 
+    const contactPages = await findContactPages($, usedUrl);
     for (const page of contactPages) {
       const h = await fetchHtmlTry(page);
       if (!h) continue;
@@ -105,13 +149,32 @@ module.exports = async function enrich(domain, name) {
       const c = extractContacts(h);
       c.emails.forEach(e => foundEmails.add(e));
       c.phones.forEach(p => foundPhones.add(p));
+      const $p = cheerio.load(h);
+      collectedTextPieces.push($p('body').text() || '');
+    }
+
+    const jobPages = await findJobPages($, usedUrl);
+    for (const page of jobPages) {
+      const h = await fetchHtmlTry(page);
+      if (!h) continue;
+      foundUrls.add(page);
+      const $j = cheerio.load(h);
+      collectedTextPieces.push($j('body').text() || '');
     }
   }
+
+  const combinedText = collectedTextPieces.join('\n ').replace(/\s+/g, ' ').trim();
+
+  // Infer problems using rule-based heuristics
+  const inferredProblems = inferProblemsFromText(combinedText);
+  const problemSummary = inferredProblems.length ? inferredProblems.join(' ') : 'not available';
 
   return {
     domain: base,
     emails: Array.from(foundEmails),
     phones: Array.from(foundPhones),
-    sources: Array.from(foundUrls)
+    sources: Array.from(foundUrls),
+    inferredProblems,
+    problemSummary
   };
 };
